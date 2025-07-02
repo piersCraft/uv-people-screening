@@ -42,7 +42,8 @@ fragment_test = QueryFragment(
 
 # Build graphQL query string
 def constructQuery(fragment: QueryFragment) -> str:
-    query_string: str = f"""query company($id: ID) {{\n company(id: $id) {{\n  ...{fragment.name}\n }}\n}}\nfragment {fragment.name} on {fragment.on_type} {{ {fragment.fields}\n}}"""
+    query_string: str = f"""query company($id: ID) {{ company(id: $id) {{ ...{fragment.name} }} }} fragment {fragment.name} on {fragment.on_type} {{ {fragment.fields} }}"""
+    # query_string: str = f"""query company($id: ID) {{\n company(id: $id) {{\n  ...{fragment.name}\n }}\n}}\nfragment {fragment.name} on {fragment.on_type} {{ {fragment.fields}\n}}"""
 
     return(query_string)
 
@@ -71,9 +72,9 @@ def fetchSubjectCompany(id: int) -> SubjectCompany:
     return subjectCompany
 
 
-# - MAIN - #
+# Testing with jFrog ID
 def main():
-    id: int = 281
+    id: int = 60903
     subject_company = fetchSubjectCompany(id)
     print(subject_company)
 
