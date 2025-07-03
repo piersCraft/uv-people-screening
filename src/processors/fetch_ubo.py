@@ -68,7 +68,8 @@ def fetchBeneficialOwners(id: int) -> DataFrame:
 # Testing with Jfrog ID
 def main():
     id: int = 60903
-    print(fetchBeneficialOwners(id))
+    owners = fetchBeneficialOwners(id)
+    return owners
 
 if __name__ == "__main__":
     main()
