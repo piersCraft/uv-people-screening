@@ -1,12 +1,10 @@
 import streamlit as st
 from pydantic import BaseModel
+from processors.fetch_company import SubjectCompany
 
-def create_streamlit_app(
-    title: str,
-    page_icon: str | None = "📊",
-    layout: str = "centered",
-    initial_sidebar_state: str = "collapsed",
-) -> None:
+# Classes
+
+def create_report(subjectCompany: SubjectCompany) -> None:
     """
     Creates a simple Streamlit application with custom styling.
     
@@ -19,26 +17,27 @@ def create_streamlit_app(
     """
     # Configure the page
     st.set_page_config(
-        page_title=title,
-        page_icon=page_icon,
-        layout=layout,
-        initial_sidebar_state=initial_sidebar_state
+        page_title=subjectCompany.displayName,
+        page_icon='🚀',
+        layout='centered',
+        initial_sidebar_state='collapsed',
+        # custom_css=""""""
     )
-    
-    
-    # Display the app title
-    st.title(title)
+    # Display company information
+    st.title(subjectCompany.displayName)
+    st.image(subjectCompany.logo)
+    st.markdown(f"""
+    # Description
+    {subjectCompany.shortDescription}
+    """)
 
-
-def render_markdown(markdown_text: str) -> None:
-    """
-    Renders a markdown block in the Streamlit app.
+def build_cover_page():
+    create_report(subjectCompany)
+    render_markdown("""
+    ## 🎛️ Company Overview
     
-    Args:
-        markdown_text: The markdown text to render
-    """
-    st.markdown(markdown_text)
-
+    * Identifying growth trends
+    """)
 
 def render_table_from_model(
     model_instances: list[BaseModel], 
@@ -47,52 +46,17 @@ def render_table_from_model(
 ) -> None:
     """
     Renders a table based on a list of Pydantic model instances.
-    
     Args:
         model_instances: List of Pydantic model instances to display as a table
         title: Optional title for the table section
         description: Optional description text to display above the table
     """
-    
     if title:
         st.subheader(title)
-    
     if description:
         st.markdown(description)
 
 
 # Example usage
 if __name__ == "__main__":
-    # Initialize the app
-    create_streamlit_app(
-        title="Product Dashboard",
-        page_icon="📦",
-        layout="wide"
-    )
-    
-    # Render markdown content
-    render_markdown("""
-    ## 🎛️Company Overview
-    
-    Welcome to the Product Dashboard. This dashboard provides a simple overview of our 
-    product catalog and quarterly sales performance.
-    
-    ### Key Highlights
-    
-    * Tracking **5 products** across multiple categories
-    * Monitoring quarterly sales performance
-    * Identifying growth trends
-    """)
-    
-    # Render tables from Pydantic models
-    
-    # Add a simple text summary
-    # total_revenue = sum(data.revenue for data in sales_data)
-    # total_units = sum(data.units_sold for data in sales_data)
-    # render_markdown(f"""
-    # ### Annual Summary
-    #
-    # * **Total Revenue**: £{total_revenue:,.2f}
-    # * **Total Units Sold**: {total_units:,}
-    # * **Average Revenue per Unit**: £{total_revenue / total_units:.2f}
-    # """)
+    print(pageConfig)
