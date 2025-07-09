@@ -12,7 +12,7 @@ load_dotenv()
 acuris_key: str = os.getenv("KEY_ACURIS_TEST")
 acuris_url: str = os.getenv('URL_ACURIS_INDIVIDUAL')
 
-
+# - CLASSES - #
 class Datasets(BaseModel):
     datasets: list[str]
 
@@ -67,8 +67,9 @@ class MatchedOwners(BaseModel):
         self.ownerMatches.append(ownerMatches)
 
 
-# - Functions - #
+# - FUNCTIONS - #
 
+# Get matches from Acuris search API
 def post_acuris_search(payload: dict[str,Any]) -> ApiResponse:
     response  = requests.post(url=acuris_url,headers={"X-Api-Key": acuris_key},json=payload)
     response.raise_for_status()
@@ -77,6 +78,7 @@ def post_acuris_search(payload: dict[str,Any]) -> ApiResponse:
     # acurisResults = AcurisResults(**acurisResponseData.results.model_dump())
     return acuris_response
 
+# Loop over all individual owners and get matches
 def get_acuris_matches(individual_owners: BeneficialOwners) -> MatchedOwners:
     owner_names: list[str] = [beneficialOwner.name for beneficialOwner in individual_owners.beneficialOwners]
 
@@ -95,10 +97,10 @@ def get_acuris_matches(individual_owners: BeneficialOwners) -> MatchedOwners:
 def main():
     craft_id: int = 60903
 
-    owners_raw  = get_beneficial_owners(craft_id) # Get all ubo
-    individual_owners  = get_individual_owners(owners_raw) # Individuals only
-    output = get_acuris_matches(individual_owners)
-    print(output.model_dump())
+    owners_raw  = get_beneficial_owners(craft_id) # Get all UBO data
+    individual_owners  = get_individual_owners(owners_raw) # Filter to individuals with > 0% ownership
+    output = get_acuris_matches(individual_owners) # Get acuris matches and join to individual owners
+    print(output.model_dump()) # Export to dictionary
 
 if __name__ == "__main__":
     main()
