@@ -3,16 +3,17 @@ from dotenv import load_dotenv
 from pydantic import BaseModel
 from typing import Any
 import requests
-from fetch_ubo import BeneficialOwners, get_beneficial_owners, get_individual_owners
+from people_screening_app.fetch_ubo import BeneficialOwners, get_beneficial_owners, get_individual_owners
 
 
 # Load environment variables
-load_dotenv()
+_ = load_dotenv()
 
-acuris_key: str = os.getenv("KEY_ACURIS_TEST")
-acuris_url: str = os.getenv('URL_ACURIS_INDIVIDUAL')
+acuris_key: str | bytes = os.getenv("KEY_ACURIS_TEST")
+acuris_url: str | bytes = os.getenv('URL_ACURIS_INDIVIDUAL')
 
 # - CLASSES - #
+
 class Datasets(BaseModel):
     datasets: list[str]
 
@@ -70,6 +71,7 @@ class MatchedOwners(BaseModel):
 # - FUNCTIONS - #
 
 # Get matches from Acuris search API
+# TODO: Add input query string to the output to simplify next function
 def post_acuris_search(payload: dict[str,Any]) -> ApiResponse:
     response  = requests.post(url=acuris_url,headers={"X-Api-Key": acuris_key},json=payload)
     response.raise_for_status()
@@ -79,6 +81,7 @@ def post_acuris_search(payload: dict[str,Any]) -> ApiResponse:
     return acuris_response
 
 # Loop over all individual owners and get matches
+# TODO: Refactor to a simpler approach using list comprehension
 def get_acuris_matches(individual_owners: BeneficialOwners) -> MatchedOwners:
     owner_names: list[str] = [beneficialOwner.name for beneficialOwner in individual_owners.beneficialOwners]
 
