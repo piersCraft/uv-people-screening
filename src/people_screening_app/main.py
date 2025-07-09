@@ -1,7 +1,6 @@
-from processors import fetch_company
-from processors.fetch_company import SubjectCompany
-from processors.fetch_ubo import get_individual_owners, get_beneficial_owners
-from processors.fetch_acuris_individuals import get_acuris_matches, MatchedOwners, OwnerMatch
+from people_screening_app.fetch_company import SubjectCompany, fetchSubjectCompany
+from people_screening_app.fetch_ubo import get_individual_owners, get_beneficial_owners
+from people_screening_app.fetch_acuris_individuals import get_acuris_matches, MatchedOwners
 import streamlit as st
 import pandas as pd
 
@@ -9,20 +8,17 @@ import pandas as pd
 
 # Subject Company ID and information
 craft_id: int = 60903 # initialise craft ID
-company_info: SubjectCompany = fetch_company.fetchSubjectCompany(craft_id) # Get company info for company id
+company_info: SubjectCompany = fetchSubjectCompany(craft_id) # Get company info for company id
 company_df = pd.DataFrame(company_info) # Get ubo data for company id
 
 # Beneficial Owners
 beneficial_owners = get_beneficial_owners(craft_id) # Get all beneficial owners from the UBO object
 individual_owners = get_individual_owners(beneficial_owners) # Filter to individuals with >0% ownership
-individual_owners_df = pd.DataFrame(individual_owners) # Export individual owners to dataframe
+# individual_owners_df = pd.DataFrame(individual_owners) # Export individual owners to dataframe
 
 # Acuris Matches
-matchedOwners: MatchedOwners = get_acuris_matches(individual_owners) # Get acuris matches and join to individual owners
-ownerMatches: list[OwnerMatch] = matchedOwners.ownerMatches
+matched_owners: MatchedOwners = get_acuris_matches(individual_owners) # Get acuris matches and join to individual owners
 
-
-acuris_matches_flattened = [ ownerMatch.owner_name for ownerMatch in ownerMatches ]
 
 # - STREAMLIT APP - #
 
@@ -60,7 +56,7 @@ def create_summary_page(subjectCompany: SubjectCompany) -> None:
     
 
 def main():
-    print(acuris_matches_flattened)
+    print(matched_owners)
 
 if __name__ == "__main__":
     main()

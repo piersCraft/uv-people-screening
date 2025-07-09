@@ -1,5 +1,5 @@
 [project]
-name = "people-screening-app"
+name = "people_screening_app"
 version = "0.1.0"
 description = "People screening application"
 readme = "README.md"
