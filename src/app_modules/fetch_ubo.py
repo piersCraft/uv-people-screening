@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from typing import Any
 import requests
 from requests import Response
+
 # Load environment variables
 load_dotenv()
 craft_key: str = os.getenv("KEY_CRAFT_SOLENG")
@@ -72,14 +73,14 @@ def get_beneficial_owners(id: int) -> list[dict[str,str | int | float | None]]:
     return owners
 
 def get_individual_owners(owner_data: list[dict[str, Any]]) -> BeneficialOwners:
-    individual_owners = [owner for owner in owner_data if owner['beneficiaryType'] == 'Individual' and owner['ownershipPercentage'] >= 1]
+    individual_owners = [owner for owner in owner_data if owner['beneficiaryType'] == 'Individual' and owner['ownershipPercentage'] > 0]
     return BeneficialOwners(beneficialOwners=individual_owners)
 
 
 def main():
     id: int = 60903
     owners = get_beneficial_owners(id)
-    return owners
+    print
 
 if __name__ == "__main__":
     main()

@@ -1,45 +1,26 @@
-import pandas as pd
-import streamlit as st
-from pydantic import BaseModel
 
-from app_modules.fetch_acuris_individuals import Dataset, acuris_match_owners
-from app_modules.fetch_company import SubjectCompany, fetchSubjectCompany
+from app_modules.fetch_company import fetchSubjectCompany, SubjectCompany
 from app_modules.fetch_ubo import get_beneficial_owners, get_individual_owners
+from app_modules.fetch_acuris_individuals import acuris_match_owners, make_owner_summaries
 
-# - DATA PIPELINE - #
+import streamlit as st
+import pandas as pd
+from pandas import DataFrame
 
-# Subject Company ID and information
-craft_id: int = 60903 # initialise craft ID
-company_info: SubjectCompany = fetchSubjectCompany(craft_id) # Get company info for company id
+craft_id: int = 1915183  # initialise craft ID : jfrog=60903
 
-# Beneficial Owners
+subject_company = fetchSubjectCompany(craft_id)
 beneficial_owners = get_beneficial_owners(craft_id) # Get all beneficial owners from the UBO object
 individual_owners = get_individual_owners(beneficial_owners) # Filter to individuals with >0% ownership
+matched_owners = acuris_match_owners(individual_owners) # Get acuris matches and join to individual owners
+matched_owner_summaries = make_owner_summaries(matched_owners)
 
-# Acuris Matches
-matched_owners  = acuris_match_owners(individual_owners) # Get acuris matches and join to individual owners
+summaries_df: DataFrame = pd.DataFrame(matched_owner_summaries.model_dump()["owner_summaries"])
 
-# Dataframes for Streamlit input
-company_df = pd.DataFrame(company_info) # Get ubo data for company id
-# individual_owners_df = pd.DataFrame(individual_owners) # Export individual owners to dataframe
-
-
-class OwnerSummary (BaseModel):
-    # TODO: add resourceID and hide the field when deserialized using pydantic field function
-    beneficial_owner_name: str
-    countries_of_residence: list[str | None]
-    ownership_percentage: float | None
-    degree_of_separation: int | None
-    matched_name: str | None = None
-    resource_id: str | None = None
-    match_confidence: int | None = None
-    # compliance_flags: list[Dataset] = Field(default_factory=lambda:[Dataset.NONE])
-    datasets: list[Dataset] | None
-
-
+    
 # - STREAMLIT APP - #
-# Summary page
-def create_summary_page(subjectCompany: SubjectCompany) -> None:
+# Title and layout
+def app_config(subjectCompany: SubjectCompany) -> None:
     # Page title and layout
     st.set_page_config(
         page_title=f"Key People Report: {subjectCompany.displayName}",
@@ -49,26 +30,43 @@ def create_summary_page(subjectCompany: SubjectCompany) -> None:
         # custom_css=""""""
     )
 
-    # Craft Logo
-    CRAFT_FAVICON = "src/assets/craft_favicon.png"
+    # Logo
+    CRAFT_FAVICON = "assets/craft_favicon.png"
     st.logo(CRAFT_FAVICON,size="large")
 
-    # Subject company information
-    col1, col2  = st.columns([0.1,0.9], vertical_alignment="bottom")
+# Subject company information
+def company_info(subject_company: SubjectCompany) -> None:
+    col1, col2  = st.columns([1,19], vertical_alignment="center")
     with col1:
-        _ = st.image(subjectCompany.logo, width=50)
+        st.image(subject_company.logo, width=70)
     with col2:
-        _ = st.markdown(f"### {subjectCompany.displayName}")
+        st.markdown(f"### {subject_company.displayName}")
 
-    _ = st.markdown("Key People Screening Report")
+    col3, col4  = st.columns([1,19], vertical_alignment="center")
+    with col3:
+        st.empty()
+    with col4: 
+        st.markdown("#### People Screening Report")
+
     _ = st.divider()
+
+# Beneficial Owner Summary Table
+def owner_summaries(owner_summaries: DataFrame) -> None:
+    st.dataframe(owner_summaries,hide_index=True)
+
+def main():
+    # Execute data pipeline
+    app_config(subject_company)
+    company_info(subject_company)
+    owner_summaries(summaries_df)
 
     
 
-def main():
-    print(matched_owners.model_dump_json(indent=2))
 
-
+    # resource_id = owner_summaries.owner_summaries.pop(2).resource_id
+    # compliance_data = get_compliance_data(resource_id)
+    # print(compliance_data)
+    # matches_per_owner = [matchedOwner.acurisMatchResults.results.matches[:5] for matchedOwner in matched_owners.matchedOwners]
 
 if __name__ == "__main__":
     main()

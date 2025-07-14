@@ -1,18 +1,64 @@
+
 import os
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 from typing import Any
 from enum import Enum
-import requests
-from app_modules.fetch_ubo import BeneficialOwner, BeneficialOwners
 
 
-# - VARIABLES - #
+# - API CONFIG - #
 _ = load_dotenv()
 acuris_key: str | bytes = os.getenv("KEY_ACURIS_TEST")
 acuris_url: str | bytes = os.getenv('URL_ACURIS_INDIVIDUAL')
+craft_key: str = os.getenv("KEY_CRAFT_SOLENG")
+craft_url: str = os.getenv("URL_CRAFT_QUERY")
 
-# - CLASSES - #
+class ApiClient(BaseModel):
+    url: str
+    method: str
+    headers: dict[str,str]
+    payload: dict[str,Any] | None
+
+class GraphQlQuery(BaseModel):
+    query: str
+    variables: str | None
+
+# - CRAFT UBO - #
+class BeneficialOwner(BaseModel):
+    name: str
+    beneficiaryType: str | None
+    country: str | None
+    ownershipPercentage: float | None
+    degreeOfSeparation: int | None
+
+class BeneficialOwners(BaseModel):
+    beneficialOwners: list[BeneficialOwner]
+
+class QueryFragment(BaseModel):
+    name: str
+    on_type: str
+    fields: str
+
+class Variables(BaseModel):
+    id: int
+
+class CraftPayload(BaseModel):
+    query: str
+    variables: Variables
+
+class CraftResponse(BaseModel):
+    data: dict[str, Any]
+
+# - ACURIS - #
+class Payload(BaseModel):
+    name: str | None
+    threshold: int = 95
+    countries: list[str] = ['CN','US','TW','HK']
+    datasets: list[str] = ['PEP-CURRENT','PEP-FORMER','PEP-LINKED','SAN-CURRENT','SAN-FORMER','RRE','POI','REL']
+
+class Payloads(BaseModel):
+    payloads: list[Payload]
+
 class Dataset(str,Enum):
     PEP_CURRENT = 'PEP-CURRENT'
     PEP_FORMER = 'PEP-FORMER'
@@ -34,7 +80,7 @@ class Address(BaseModel):
     geography: str | None
     city: str | None
 
-class IndividualMatch(BaseModel):
+class AcurisMatch(BaseModel):
     qrCode: str
     resourceId: str
     score: int
@@ -53,7 +99,7 @@ class IndividualMatch(BaseModel):
 
 class AcurisMatchResult(BaseModel):
     matchCount: int
-    matches: list[IndividualMatch | None]
+    matches: list[AcurisMatch | None]
 
 class AcurisMatchResults(BaseModel):
     results: AcurisMatchResult
@@ -70,15 +116,6 @@ class MatchedOwner(BeneficialOwner):
 
 class MatchedOwners(BaseModel):
     matchedOwners: list[MatchedOwner]
-
-class Payload(BaseModel):
-    name: str | None
-    threshold: int = 95
-    countries: list[str] = ['CN','US','TW','HK']
-    datasets: list[str] = ['PEP-CURRENT','PEP-FORMER','PEP-LINKED','SAN-CURRENT','SAN-FORMER','RRE','POI','REL']
-
-class Payloads(BaseModel):
-    payloads: list[Payload]
 
 class MatchedOwnerSummary(BaseModel):
     beneficial_owner_name: str
@@ -107,56 +144,3 @@ class MatchedOwnerSummary(BaseModel):
 
 class MatchedOwnerSummaries(BaseModel):
     owner_summaries: list[MatchedOwnerSummary]
-
-# - GET ACURIS MATCHES - #
-
-# Get matches from Acuris search API
-def post_acuris_search(owner_name: str) -> AcurisMatchResults:
-    payload = Payload(name=owner_name) # Build payload from owner name
-    response  = requests.post(url=acuris_url,headers={"X-Api-Key": acuris_key},json=payload.model_dump()) # post to Acuris search endpoint
-    response.raise_for_status() # handle errors in response
-    # acuris_response = AcurisMatchResults(results=response.json()["results"]) # Serialise response body to results object in API response
-    acurisResult = AcurisMatchResults(results=response.json()["results"])
-
-    return acurisResult
-
-# Function to add matches to ubo record
-def acuris_match_owner(beneficial_owner: BeneficialOwner) -> MatchedOwner:
-    matchedOwner = MatchedOwner.add_matches(
-        beneficial_owner=beneficial_owner,
-        acurisMatchResults=post_acuris_search(f"{beneficial_owner.name}").model_dump()
-    )
-    return matchedOwner
-
-# Loop over owners and add matches to each ubo record
-def acuris_match_owners(beneficial_owners: BeneficialOwners) -> MatchedOwners:
-    matched_owners = MatchedOwners(matchedOwners=[acuris_match_owner(beneficial_owner) for beneficial_owner in beneficial_owners.beneficialOwners])
-    return matched_owners
-
-# Function to summarise data for ubo record
-def make_owner_summary(matched_owner: MatchedOwner) -> MatchedOwnerSummary:
-    owner_summary = MatchedOwnerSummary.from_matchedOwner(matchedOwner=matched_owner)
-    return owner_summary
-
-# Produce owner summary dataframe
-def make_owner_summaries(matched_owners: MatchedOwners) -> MatchedOwnerSummaries:
-    matched_owner_summaries = MatchedOwnerSummaries(
-        owner_summaries=[make_owner_summary(matched_owner) for matched_owner in matched_owners.matchedOwners]
-    )
-    return matched_owner_summaries
-
-# - GET COMPLIANCE DATA - #
-def get_compliance_data(resource_id: str):
-    resource_url = f"{acuris_url}{resource_id}"
-    response = requests.get(url=resource_url,headers={"X-Api-Key": acuris_key})
-    response.raise_for_status()
-    data = response.json()
-
-    return data
-
-# Testing wit Jfrog ID
-def main():
-    print("main")
-
-if __name__ == "__main__":
-    main()
