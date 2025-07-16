@@ -1,9 +1,9 @@
 [project]
-name = ""
+name = "uv-people-screening"
 version = "0.1.0"
 description = "People screening application"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dependencies = [
     "pandas>=2.3.0",
     "pandas-stubs>=2.2.3.250527",
@@ -13,3 +13,11 @@ dependencies = [
     "streamlit>=1.46.1",
     "weasyprint>=65.1",
 ]
+
+[dependency-groups]
+dev = [
+    "uv-people-screening",
+]
+
+[tool.uv.sources]
+uv-people-screening = { workspace = true }

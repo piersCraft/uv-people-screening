@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import Any
 from enum import Enum
 
@@ -26,6 +26,46 @@ class Variables(BaseModel):
 class CraftPayload(BaseModel):
     query: str
     variables: Variables
+
+class CraftBeneficiaryType(BaseModel):
+    description: str = 'Unknown'
+
+class CraftBeneficialOwnerAddress(BaseModel):
+    city: str = Field(default='Unknown')
+    country: str = Field(default='Unknown') 
+
+class CraftBeneficialOwner(BaseModel):
+    name: str
+    beneficiaryType: CraftBeneficiaryType = Field(default_factory=CraftBeneficiaryType)
+    address: CraftBeneficialOwnerAddress = Field(default_factory=CraftBeneficialOwnerAddress)
+    beneficialOwnershipPercentage: float = Field(default=0)
+    degreeOfSeparation: int = Field(default=0)
+
+    @field_validator("address","beneficiaryType", mode="before")
+    @classmethod
+    def fill_missing_dicts(cls, v: Any) -> Any:
+        if v is None:
+            return {}
+        return v
+
+    @field_validator("beneficialOwnershipPercentage","degreeOfSeparation", mode="before")
+    @classmethod
+    def fill_missing_values(cls, v: Any) -> Any:
+        if v is None:
+            return 0
+        return v
+
+class CraftBeneficialOwners(BaseModel):
+    beneficialOwners: list[CraftBeneficialOwner]
+
+class CraftDnb(BaseModel):
+    beneficialOwnershipStructure: CraftBeneficialOwners
+
+class SubjectCompanyUbo(BaseModel):
+    id: int
+    displayName: str
+    shortDescription: str
+    dnb: CraftDnb
 
 class SubjectCompany(BaseModel):
     id: int
