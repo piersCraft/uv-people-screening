@@ -3,7 +3,7 @@ import os
 import requests
 
 from requests import Response
-from models import GraphQlFragment, Variables,  CraftPayload, SubjectCompany
+from src.ppl_screen_package.models import GraphQlFragment, GraphQlVariables,  CraftPayload, CraftCompanyDetails
 
 # Load environment variables
 _ = load_dotenv()
@@ -23,11 +23,11 @@ def constructQuery(fragment: GraphQlFragment) -> str:
     return query_string
 
 # Fetch company data
-def fetchSubjectCompany(id: int) -> SubjectCompany:
+def fetchSubjectCompany(id: int) -> CraftCompanyDetails:
     query = constructQuery(fragment_company)
-    variables = Variables(id=id)
+    variables = GraphQlVariables(id=id)
     response: Response = requests.post(url=craft_url,headers={"X-Craft-Api-Key": craft_key},json=CraftPayload(query=query, variables=variables).model_dump())
-    subjectCompany = SubjectCompany.model_validate(response.json()['data']['company'])
+    subjectCompany = CraftCompanyDetails.model_validate(response.json()['data']['company'])
 
     return subjectCompany
 

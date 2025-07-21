@@ -1,26 +1,14 @@
-
-from app_modules.fetch_company import fetchSubjectCompany, SubjectCompany
-from app_modules.fetch_ubo import get_beneficial_owners, get_individual_owners
-from app_modules.fetch_acuris_individuals import acuris_match_owners, make_owner_summaries
+from src.ppl_screen_package.fetch_ubo import get_company_ubo, get_individual_owners
+from src.ppl_screen_package.models import CraftCompanyDetails, OwnerSummaries
+from src.ppl_screen_package.fetch_acuris_individuals import acuris_match_owners
 
 import streamlit as st
-import pandas as pd
-from pandas import DataFrame
 
-craft_id: int = 1915183  # initialise craft ID : jfrog=60903
-
-subject_company = fetchSubjectCompany(craft_id)
-beneficial_owners = get_beneficial_owners(craft_id) # Get all beneficial owners from the UBO object
-individual_owners = get_individual_owners(beneficial_owners) # Filter to individuals with >0% ownership
-matched_owners = acuris_match_owners(individual_owners) # Get acuris matches and join to individual owners
-matched_owner_summaries = make_owner_summaries(matched_owners)
-
-summaries_df: DataFrame = pd.DataFrame(matched_owner_summaries.model_dump()["owner_summaries"])
 
     
 # - STREAMLIT APP - #
 # Title and layout
-def app_config(subjectCompany: SubjectCompany) -> None:
+def app_config(subjectCompany: CraftCompanyDetails) -> None:
     # Page title and layout
     st.set_page_config(
         page_title=f"Key People Report: {subjectCompany.displayName}",
@@ -35,7 +23,7 @@ def app_config(subjectCompany: SubjectCompany) -> None:
     st.logo(CRAFT_FAVICON,size="large")
 
 # Subject company information
-def company_info(subject_company: SubjectCompany) -> None:
+def company_info(subject_company: CraftCompanyDetails) -> None:
     col1, col2  = st.columns([1,19], vertical_alignment="center")
     with col1:
         st.image(subject_company.logo, width=70)
@@ -50,23 +38,16 @@ def company_info(subject_company: SubjectCompany) -> None:
 
     _ = st.divider()
 
-# Beneficial Owner Summary Table
-def owner_summaries(owner_summaries: DataFrame) -> None:
-    st.dataframe(owner_summaries,hide_index=True)
 
 def main():
     # Execute data pipeline
-    app_config(subject_company)
-    company_info(subject_company)
-    owner_summaries(summaries_df)
+    craft_id: int = 60903  #  craft ID : jfrog=60903 shenzen=1915183
+    beneficial_owners = get_company_ubo(craft_id)
+    individual_owners = get_individual_owners(beneficial_owners)
+    matched_owners = acuris_match_owners(individual_owners)
+    owner_summaries = OwnerSummaries.model_validate(matched_owners.model_dump())
 
-    
-
-
-    # resource_id = owner_summaries.owner_summaries.pop(2).resource_id
-    # compliance_data = get_compliance_data(resource_id)
-    # print(compliance_data)
-    # matches_per_owner = [matchedOwner.acurisMatchResults.results.matches[:5] for matchedOwner in matched_owners.matchedOwners]
+    print(owner_summaries.model_dump())
 
 if __name__ == "__main__":
     main()
